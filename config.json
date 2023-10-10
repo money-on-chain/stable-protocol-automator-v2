@@ -1,0 +1,36 @@
+{
+  "uri": "https://public-node.testnet.rsk.co",
+  "chain_id": 31,
+  "timeout": 180,
+  "gas_price_multiply_factor": 1.01,
+  "tasks": {
+    "run_settlement": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "partial_execution_steps": 20,
+      "gas_limit": 500000,
+      "cloudwatch": {
+        "metric_name": "FLIPAGO-TESTNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    },
+    "calculate_ema": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 200000,
+      "cloudwatch": {
+        "metric_name": "FLIPAGO-TESTNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    }
+  },
+  "addresses": {
+    "MocCABag": "0x2781df266eE4A5A678074227027d945a6c53BdB6",
+    "MoCMedianizer": "",
+    "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8"
+  }
+}

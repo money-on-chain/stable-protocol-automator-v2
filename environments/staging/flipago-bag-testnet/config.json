@@ -4,10 +4,9 @@
   "timeout": 180,
   "gas_price_multiply_factor": 1.01,
   "tasks": {
-    "run_settlement": {
+    "execute_settlement": {
       "interval": 5,
       "wait_timeout": 240,
-      "partial_execution_steps": 20,
       "gas_limit": 4500000,
       "cloudwatch": {
         "metric_name": "FLIPAGO-TESTNET",

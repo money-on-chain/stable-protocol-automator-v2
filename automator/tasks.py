@@ -80,13 +80,11 @@ class Automator(PendingTransactionsTasksManager):
         return task_result
 
     @on_pending_transactions
-    def run_settlement(self, task=None, global_manager=None, task_result=None):
-
-        partial_execution_steps = self.config['tasks']['run_settlement']['partial_execution_steps']
+    def execute_settlement(self, task=None, global_manager=None, task_result=None):
 
         # Get if block to settlement > 0 to continue
         get_bts = self.contracts_loaded["Moc"].sc.functions.getBts().call()
-        if get_bts > 0:
+        if get_bts <= 0:
 
             # return if there are pending transactions
             if task_result.get('pending_transactions', None):
@@ -104,9 +102,8 @@ class Automator(PendingTransactionsTasksManager):
             calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
 
             try:
-                tx_hash = self.contracts_loaded["Moc"].run_settlement(
-                    partial_execution_steps,
-                    gas_limit=self.config['tasks']['run_settlement']['gas_limit'],
+                tx_hash = self.contracts_loaded["Moc"].execute_settlement(
+                    gas_limit=self.config['tasks']['execute_settlement']['gas_limit'],
                     gas_price=int(calculated_gas_price * 10 ** 18),
                     nonce=nonce
                 )
@@ -120,7 +117,7 @@ class Automator(PendingTransactionsTasksManager):
                 new_tx['timestamp'] = datetime.datetime.now()
                 new_tx['gas_price'] = calculated_gas_price
                 new_tx['nonce'] = nonce
-                new_tx['timeout'] = self.config['tasks']['run_settlement']['wait_timeout']
+                new_tx['timeout'] = self.config['tasks']['execute_settlement']['wait_timeout']
                 task_result['pending_transactions'].append(new_tx)
 
                 log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
@@ -264,17 +261,17 @@ class AutomatorTasks(Automator):
 
         log.info("Getting addresses from Main Contract...")
 
-        # MocCABag
+        # Moc
         self.contracts_loaded["Moc"] = Moc(
             self.connection_helper.connection_manager,
             contract_address=self.config['addresses']['Moc'])
-        self.contracts_addresses['MocCABag'] = self.contracts_loaded["Moc"].address().lower()
+        self.contracts_addresses['Moc'] = self.contracts_loaded["Moc"].address().lower()
 
         # MoCMedianizer
         if 'oracle_poke' in self.config['tasks']:
             self.contracts_loaded["MoCMedianizer"] = MoCMedianizer(
                 self.connection_helper.connection_manager,
-                contract_address=self.contracts_addresses['MoCMedianizer'])
+                contract_address=self.config['addresses']['MoCMedianizer'])
             self.contracts_addresses['MoCMedianizer'] = self.contracts_loaded["MoCMedianizer"].address().lower()
 
         # Multicall
@@ -290,14 +287,14 @@ class AutomatorTasks(Automator):
         self.max_workers = 1
 
         # run_settlement
-        if 'run_settlement' in self.config['tasks']:
-            log.info("Jobs add: 1. Run Settlement")
-            interval = self.config['tasks']['run_settlement']['interval']
-            self.add_task(self.run_settlement,
+        if 'execute_settlement' in self.config['tasks']:
+            log.info("Jobs add: 1. Execute Settlement")
+            interval = self.config['tasks']['execute_settlement']['interval']
+            self.add_task(self.execute_settlement,
                           args=[],
                           wait=interval,
                           timeout=180,
-                          task_name='1. Run Settlement')
+                          task_name='1. Execute Settlement')
 
         # calculate EMA
         if 'calculate_ema' in self.config['tasks']:

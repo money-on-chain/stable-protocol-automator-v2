@@ -10,7 +10,7 @@
       "partial_execution_steps": 20,
       "gas_limit": 4500000,
       "cloudwatch": {
-        "metric_name": "FLIPAGO-TESTNET",
+        "metric_name": "ROC-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -21,7 +21,7 @@
       "wait_timeout": 240,
       "gas_limit": 2000000,
       "cloudwatch": {
-        "metric_name": "FLIPAGO-TESTNET",
+        "metric_name": "ROC-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -32,7 +32,18 @@
       "wait_timeout": 240,
       "gas_limit": 1000000,
       "cloudwatch": {
-        "metric_name": "FLIPAGO-TESTNET",
+        "metric_name": "ROC-TESTNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    },
+    "oracle_poke": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 200000,
+      "cloudwatch": {
+        "metric_name": "ROC-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -40,8 +51,8 @@
     }
   },
   "addresses": {
-    "Moc": "0xE481663CB5E5C41CF528d146DC221D2489Fdc451",
-    "MoCMedianizer": "",
+    "Moc": "0x02fd24648BcD6283216bc0C9E5c97a7FE9fA9dc2",
+    "MoCMedianizer": "0x9d4b2c05818A0086e641437fcb64ab6098c7BbEc",
     "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8"
   }
 }

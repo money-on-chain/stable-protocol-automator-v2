@@ -26,10 +26,21 @@
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
       }
+    },
+    "tc_holders_interest_payment": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 1000000,
+      "cloudwatch": {
+        "metric_name": "FLIPAGO-TESTNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
     }
   },
   "addresses": {
-    "MocCABag": "0x2781df266eE4A5A678074227027d945a6c53BdB6",
+    "Moc": "0x2781df266eE4A5A678074227027d945a6c53BdB6",
     "MoCMedianizer": "",
     "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8"
   }

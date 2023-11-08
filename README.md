@@ -10,7 +10,8 @@ run async of the app, and call directly to the contract through node.
 
  1. Contract calculate EMA
  2. Contract run settlement
- 3. Oracle Compute: Check expiration of price in Oracle.
+ 3. Pay TC Holders Interest
+ 4. Oracle Compute: Check expiration of price in Oracle.
  
 ### Usage
 

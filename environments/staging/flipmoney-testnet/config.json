@@ -9,7 +9,7 @@
       "wait_timeout": 240,
       "gas_limit": 4500000,
       "cloudwatch": {
-        "metric_name": "FLIPAGO-TESTNET",
+        "metric_name": "FLIPMONEY-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -20,7 +20,7 @@
       "wait_timeout": 240,
       "gas_limit": 2000000,
       "cloudwatch": {
-        "metric_name": "FLIPAGO-TESTNET",
+        "metric_name": "FLIPMONEY-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -31,7 +31,7 @@
       "wait_timeout": 240,
       "gas_limit": 1000000,
       "cloudwatch": {
-        "metric_name": "FLIPAGO-TESTNET",
+        "metric_name": "FLIPMONEY-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -39,7 +39,7 @@
     }
   },
   "addresses": {
-    "Moc": "0x9bbb9581A430F02179f363866F050079Eb58C398",
+    "Moc": "0x7D6b0CdFC48A039Df1f7F7DaDc11a8B3467f5d01",
     "MoCMedianizer": "",
     "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8"
   }

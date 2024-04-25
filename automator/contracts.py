@@ -184,3 +184,36 @@ class MoCMedianizer(Contract):
         )
 
         return tx_hash
+
+
+class CommissionSplitter(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'CommissionSplitter'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/CommissionSplitter.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
+
+    def split(
+            self,
+            *args,
+            **kwargs):
+
+        tx_hash = self.connection_manager.send_function_transaction(
+            self.sc.functions.split,
+            *args,
+            **kwargs
+        )
+
+        return tx_hash

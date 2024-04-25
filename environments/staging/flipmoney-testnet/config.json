@@ -36,7 +36,19 @@
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
       }
-    }
+    },
+    "commission_splitters": [
+      {
+        "interval": 5,
+        "wait_timeout": 240,
+        "gas_limit": 1000000,
+        "address": "0x652FD7b78aCd4d0b9A14dF3Ae40918EFf6770Efd",
+        "min_balance": 1000000000000,
+        "min_balance_fee_token": 1000000000000,
+        "token": "",
+        "fee_token": ""
+      }
+    ]
   },
   "addresses": {
     "Moc": "0x7D6b0CdFC48A039Df1f7F7DaDc11a8B3467f5d01",

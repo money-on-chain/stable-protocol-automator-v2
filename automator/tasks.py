@@ -11,7 +11,7 @@ from .logger import log
 from .utils import aws_put_metric_heart_beat
 
 
-__VERSION__ = '1.0.3'
+__VERSION__ = '1.0.4'
 
 
 log.info("Starting Stable Protocol Automator version {0}".format(__VERSION__))
@@ -256,6 +256,11 @@ class Automator(PendingTransactionsTasksManager):
             if task_result.get('pending_transactions', None):
                 return task_result
 
+            log.info("Task :: {0} :: Commission Splitter has balance!. Balances: -AC Token: {1}. -Fee Token: {2}.  ".format(
+                task.task_name,
+                Web3.from_wei(token_balance, 'ether'),
+                Web3.from_wei(fee_token_balance, 'ether')))
+
             web3 = self.connection_helper.connection_manager.web3
 
             nonce = web3.eth.get_transaction_count(
@@ -343,7 +348,6 @@ class AutomatorTasks(Automator):
         if 'commission_splitters' in self.config['tasks']:
             count = 0
             for setting_commission in self.config['tasks']['commission_splitters']:
-                count += 1
                 self.contracts_loaded["CommissionSplitter_{0}".format(count)] = CommissionSplitter(
                     self.connection_helper.connection_manager,
                     contract_address=setting_commission['address'])
@@ -352,7 +356,7 @@ class AutomatorTasks(Automator):
                 # Token
                 self.contracts_loaded["CommissionSplitter_Token_{0}".format(count)] = ERC20Token(
                     self.connection_helper.connection_manager,
-                    contract_address=setting_commission['token'])
+                    contract_address=setting_commission['ac_token'])
                 self.contracts_addresses["CommissionSplitter_Token_{0}".format(count)] = self.contracts_loaded["CommissionSplitter_Token_{0}".format(count)].address().lower()
 
                 # Fee Token
@@ -362,6 +366,8 @@ class AutomatorTasks(Automator):
                         contract_address=setting_commission['fee_token'])
                     self.contracts_addresses["CommissionSplitter_FeeToken_{0}".format(count)] = self.contracts_loaded[
                         "CommissionSplitter_FeeToken_{0}".format(count)].address().lower()
+
+                count += 1
 
     def schedule_tasks(self):
 
@@ -414,14 +420,14 @@ class AutomatorTasks(Automator):
         if 'commission_splitters' in self.config['tasks']:
             count = 0
             for setting_commission in self.config['tasks']['commission_splitters']:
-                count += 1
-                log.info("Jobs add: 5. Commission Splitter: {0}".format(count))
+                log.info("Jobs add: 5. Commission Splitter: {0}".format(setting_commission['address']))
                 interval = setting_commission['interval']
                 self.add_task(self.commission_splitter,
                               args=[count],
                               wait=interval,
                               timeout=180,
-                              task_name="Jobs add: 5. Commission Splitter: {0}".format(count))
+                              task_name="5. Commission Splitter: {0}".format(setting_commission['address']))
+                count += 1
 
         # Set max workers
         self.max_tasks = len(self.tasks)

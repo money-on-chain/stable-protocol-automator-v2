@@ -42,11 +42,11 @@
         "interval": 5,
         "wait_timeout": 240,
         "gas_limit": 1000000,
-        "address": "0x652FD7b78aCd4d0b9A14dF3Ae40918EFf6770Efd",
+        "address": "0x71eC030A26B38e248bd120b06eDAcaE232F19388",
         "min_balance": 1000000000000,
         "min_balance_fee_token": 1000000000000,
-        "token": "",
-        "fee_token": ""
+        "ac_token": "0x4dA7997A819bb46B6758B9102234c289dD2Ad3bf",
+        "fee_token": "0xf698561a2c88F4B057f1D5A5285B9cc38fE61D76"
       }
     ]
   },

@@ -9,7 +9,7 @@
       "wait_timeout": 240,
       "gas_limit": 4500000,
       "cloudwatch": {
-        "metric_name": "ROC-ALPHA-TESTNET",
+        "metric_name": "ROC-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -20,7 +20,7 @@
       "wait_timeout": 240,
       "gas_limit": 2000000,
       "cloudwatch": {
-        "metric_name": "ROC-ALPHA-TESTNET",
+        "metric_name": "ROC-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -31,18 +31,40 @@
       "wait_timeout": 240,
       "gas_limit": 1000000,
       "cloudwatch": {
-        "metric_name": "ROC-ALPHA-TESTNET",
+        "metric_name": "ROC-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
       }
     },
+    "commission_splitters": [
+      {
+        "interval": 5,
+        "wait_timeout": 240,
+        "gas_limit": 1000000,
+        "address": "0x7d5Da0F5B7FD039eE7C5A73766ABcE5797974755",
+        "min_balance": 1000000000000000000,
+        "min_balance_fee_token": 1000000000000000000,
+        "ac_token": "0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE",
+        "fee_token": "0x45a97b54021a3F99827641AFe1BFAE574431e6ab"
+      },
+      {
+        "interval": 5,
+        "wait_timeout": 240,
+        "gas_limit": 1000000,
+        "address": "0xCb0ecFBF3AC3dC18c7AdF11F91a6099994cE343b",
+        "min_balance": 1000000000000000000,
+        "min_balance_fee_token": 1000000000000000000,
+        "ac_token": "0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE",
+        "fee_token": "0x45a97b54021a3F99827641AFe1BFAE574431e6ab"
+      }
+    ],
     "oracle_poke": {
       "interval": 5,
       "wait_timeout": 240,
       "gas_limit": 200000,
       "cloudwatch": {
-        "metric_name": "ROC-ALPHA-TESTNET",
+        "metric_name": "ROC-TESTNET",
         "dimensions_name": "JOBS",
         "dimensions_value": "Error",
         "namespace": "MOC/EXCEPTIONS"
@@ -50,7 +72,7 @@
     }
   },
   "addresses": {
-    "Moc": "0x16F68976cDF62B911509921418dAaA95e686ca65",
+    "Moc": "0xa416934264515bb381E3b746f10f22D5c6f9431a",
     "MoCMedianizer": "0x9d4b2c05818A0086e641437fcb64ab6098c7BbEc",
     "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8"
   }

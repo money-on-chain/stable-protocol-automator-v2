@@ -37,6 +37,28 @@
         "namespace": "MOC/EXCEPTIONS"
       }
     },
+    "commission_splitters": [
+      {
+        "interval": 5,
+        "wait_timeout": 240,
+        "gas_limit": 1000000,
+        "address": "0x7d5Da0F5B7FD039eE7C5A73766ABcE5797974755",
+        "min_balance": 1000000000000000000,
+        "min_balance_fee_token": 1000000000000000000,
+        "ac_token": "0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE",
+        "fee_token": "0x45a97b54021a3F99827641AFe1BFAE574431e6ab"
+      },
+      {
+        "interval": 5,
+        "wait_timeout": 240,
+        "gas_limit": 1000000,
+        "address": "0xCb0ecFBF3AC3dC18c7AdF11F91a6099994cE343b",
+        "min_balance": 1000000000000000000,
+        "min_balance_fee_token": 1000000000000000000,
+        "ac_token": "0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE",
+        "fee_token": "0x45a97b54021a3F99827641AFe1BFAE574431e6ab"
+      }
+    ],
     "oracle_poke": {
       "interval": 5,
       "wait_timeout": 240,

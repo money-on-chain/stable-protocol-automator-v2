@@ -12,6 +12,7 @@ run async of the app, and call directly to the contract through node.
  2. Contract run settlement
  3. Pay TC Holders Interest
  4. Oracle Compute: Check expiration of price in Oracle.
+ 5. Commission Splitter
  
 ### Usage
 

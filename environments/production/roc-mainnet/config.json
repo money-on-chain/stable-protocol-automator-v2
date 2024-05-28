@@ -1,0 +1,57 @@
+{
+  "uri": "https://public-node.rsk.co",
+  "chain_id": 30,
+  "timeout": 180,
+  "gas_price_multiply_factor": 1.01,
+  "tasks": {
+    "execute_settlement": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 4500000,
+      "cloudwatch": {
+        "metric_name": "ROC-MAINNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    },
+    "calculate_ema": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 2000000,
+      "cloudwatch": {
+        "metric_name": "ROC-MAINNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    },
+    "tc_holders_interest_payment": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 1000000,
+      "cloudwatch": {
+        "metric_name": "ROC-MAINNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    },
+    "oracle_poke": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 200000,
+      "cloudwatch": {
+        "metric_name": "ROC-MAINNET",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    }
+  },
+  "addresses": {
+    "Moc": "0xA27024Ed70035E46dba712609fc2Afa1c97aA36A",
+    "MoCMedianizer": "0x504EfCadFB020d6bBaeC8a5c5BB21453719d0E00",
+    "Multicall2": "0x8f344c3b2a02a801c24635f594c5652c8a2eb02a"
+  }
+}

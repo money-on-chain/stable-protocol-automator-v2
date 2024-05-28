@@ -46,7 +46,7 @@ If you want to use your custom private node pass as environment settings, before
 Build, change path to correct environment
 
 ```
-docker build -t automator -f Dockerfile --build-arg CONFIG=./enviroments/flipago-testnet/config.json .
+docker build -t automator_v2 -f Dockerfile --build-arg CONFIG=./enviroments/production/roc-mainnet/config.json .
 ```
 
 Run, replace ACCOUNT_PK_SECRET  with your private key owner of the account
@@ -55,5 +55,5 @@ Run, replace ACCOUNT_PK_SECRET  with your private key owner of the account
 docker run -d \
 --name automator_1 \
 --env ACCOUNT_PK_SECRET=asdfasdfasdf \
-automator
+automator_v2
 ```

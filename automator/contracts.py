@@ -101,7 +101,7 @@ class Moc(Contract):
 
     contract_name = 'Moc'
     contract_abi = Contract.content_abi_file(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/flipago/Moc.abi'))
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/flipmoney/Moc.abi'))
 
     def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
 

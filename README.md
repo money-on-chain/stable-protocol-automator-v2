@@ -8,11 +8,11 @@ run async of the app, and call directly to the contract through node.
 
 ### Currents tasks
 
- 1. Contract calculate EMA
- 2. Contract run settlement
- 3. Pay TC Holders Interest
+ 1. Contract calculate EMA if it's the time
+ 2. Contract run settlement if it's the time
+ 3. Pay TC Holders Interest if it's the time
  4. Oracle Compute: Check expiration of price in Oracle.
- 5. Commission Splitter
+ 5. Run Commission Splitter if need it
  
 ### Usage
 
@@ -57,3 +57,18 @@ docker run -d \
 --env ACCOUNT_PK_SECRET=asdfasdfasdf \
 automator_v2
 ```
+
+### Contracts
+
+
+**Stable protocol core v2**
+
+*[https://github.com/money-on-chain/stable-protocol-core-v2](https://github.com/money-on-chain/stable-protocol-core-v2)*
+
+**RIF on Chain implementation v2**
+
+*[https://github.com/money-on-chain/stable-protocol-roc-v2](https://github.com/money-on-chain/stable-protocol-roc-v2)*
+
+**Flipmoney implementation v2**
+
+*[https://github.com/money-on-chain/stable-protocol-roc-v2](https://github.com/money-on-chain/stable-protocol-roc-v2)*

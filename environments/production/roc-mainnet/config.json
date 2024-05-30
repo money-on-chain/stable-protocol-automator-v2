@@ -7,7 +7,7 @@
     "execute_settlement": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 4500000,
+      "gas_limit": 1000000,
       "cloudwatch": {
         "metric_name": "ROC-MAINNET",
         "dimensions_name": "JOBS",
@@ -18,7 +18,7 @@
     "calculate_ema": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 2000000,
+      "gas_limit": 800000,
       "cloudwatch": {
         "metric_name": "ROC-MAINNET",
         "dimensions_name": "JOBS",
@@ -29,7 +29,7 @@
     "tc_holders_interest_payment": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 1000000,
+      "gas_limit": 800000,
       "cloudwatch": {
         "metric_name": "ROC-MAINNET",
         "dimensions_name": "JOBS",

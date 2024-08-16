@@ -1,0 +1,46 @@
+{
+  "uri": "https://public-node.rsk.co",
+  "chain_id": 30,
+  "timeout": 180,
+  "gas_price_multiply_factor": 1.01,
+  "tasks": {
+    "execute_settlement": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 1000000,
+      "cloudwatch": {
+        "metric_name": "FLIPMONEY",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    },
+    "calculate_ema": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 800000,
+      "cloudwatch": {
+        "metric_name": "FLIPMONEY",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    },
+    "tc_holders_interest_payment": {
+      "interval": 5,
+      "wait_timeout": 240,
+      "gas_limit": 800000,
+      "cloudwatch": {
+        "metric_name": "FLIPMONEY",
+        "dimensions_name": "JOBS",
+        "dimensions_value": "Error",
+        "namespace": "MOC/EXCEPTIONS"
+      }
+    }
+  },
+  "addresses": {
+    "Moc": "0xEC766E9BAdcdE53B01118F1D5Ba56295A62e2C6D",
+    "MoCMedianizer": "",
+    "Multicall2": "0x8f344c3b2a02a801c24635f594c5652c8a2eb02a"
+  }
+}

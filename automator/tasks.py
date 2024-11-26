@@ -11,7 +11,7 @@ from .logger import log
 from .utils import aws_put_metric_heart_beat
 
 
-__VERSION__ = '1.0.5'
+__VERSION__ = '1.0.6'
 
 
 log.info("Starting Stable Protocol Automator version {0}".format(__VERSION__))

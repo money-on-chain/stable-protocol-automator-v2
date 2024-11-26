@@ -72,3 +72,8 @@ automator_v2
 **Flipmoney implementation v2**
 
 *[https://github.com/money-on-chain/stable-protocol-roc-v2](https://github.com/money-on-chain/stable-protocol-roc-v2)*
+
+
+**Money on Chain implementation v2**
+
+*[https://github.com/money-on-chain/stable-protocol-moc-v2](https://github.com/money-on-chain/stable-protocol-moc-v2)*

@@ -1,5 +1,6 @@
 {
   "uri": "https://public-node.testnet.rsk.co",
+  "collateral": "rc20",
   "chain_id": 31,
   "timeout": 180,
   "gas_price_multiply_factor": 1.01,
@@ -7,42 +8,24 @@
     "execute_settlement": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 4500000,
-      "cloudwatch": {
-        "metric_name": "ROC-TESTNET",
-        "dimensions_name": "JOBS",
-        "dimensions_value": "Error",
-        "namespace": "MOC/EXCEPTIONS"
-      }
+      "gas_limit": 4500000
     },
     "calculate_ema": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 2000000,
-      "cloudwatch": {
-        "metric_name": "ROC-TESTNET",
-        "dimensions_name": "JOBS",
-        "dimensions_value": "Error",
-        "namespace": "MOC/EXCEPTIONS"
-      }
+      "gas_limit": 2000000
     },
     "tc_holders_interest_payment": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 1000000,
-      "cloudwatch": {
-        "metric_name": "ROC-TESTNET",
-        "dimensions_name": "JOBS",
-        "dimensions_value": "Error",
-        "namespace": "MOC/EXCEPTIONS"
-      }
+      "gas_limit": 1000000
     },
     "commission_splitters": [
       {
         "interval": 5,
         "wait_timeout": 240,
         "gas_limit": 1000000,
-        "address": "0x7d5Da0F5B7FD039eE7C5A73766ABcE5797974755",
+        "address": "0x499072990571C49Ef9369624885581b9C5aF0B11",
         "min_balance": 10000000000000000000,
         "min_balance_fee_token": 10000000000000000000,
         "ac_token": "0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE",
@@ -52,13 +35,18 @@
         "interval": 5,
         "wait_timeout": 240,
         "gas_limit": 1000000,
-        "address": "0xCb0ecFBF3AC3dC18c7AdF11F91a6099994cE343b",
+        "address": "0xD1FF3909dCa7C755F38e4FF04ce7170b4940d89B",
         "min_balance": 10000000000000000000,
         "min_balance_fee_token": 10000000000000000000,
         "ac_token": "0x19F64674D8A5B4E652319F5e239eFd3bc969A1fE",
         "fee_token": "0x45a97b54021a3F99827641AFe1BFAE574431e6ab"
       }
     ],
+    "refresh_ac_balance": {
+      "interval": 60,
+      "wait_timeout": 240,
+      "gas_limit": 200000
+    },
     "oracle_poke": {
       "interval": 5,
       "wait_timeout": 240,

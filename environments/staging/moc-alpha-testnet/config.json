@@ -1,5 +1,6 @@
 {
   "uri": "https://public-node.testnet.rsk.co",
+  "collateral": "coinbase",
   "chain_id": 31,
   "timeout": 180,
   "gas_price_multiply_factor": 1.01,

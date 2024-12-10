@@ -1,5 +1,6 @@
 {
   "uri": "https://public-node.rsk.co",
+  "collateral": "rc20",
   "chain_id": 30,
   "timeout": 180,
   "gas_price_multiply_factor": 1.01,
@@ -7,42 +8,39 @@
     "execute_settlement": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 1000000,
-      "cloudwatch": {
-        "metric_name": "ROC-MAINNET",
-        "dimensions_name": "JOBS",
-        "dimensions_value": "Error",
-        "namespace": "MOC/EXCEPTIONS"
-      }
+      "gas_limit": 1000000
     },
     "calculate_ema": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 800000,
-      "cloudwatch": {
-        "metric_name": "ROC-MAINNET",
-        "dimensions_name": "JOBS",
-        "dimensions_value": "Error",
-        "namespace": "MOC/EXCEPTIONS"
-      }
+      "gas_limit": 800000
     },
     "tc_holders_interest_payment": {
       "interval": 5,
       "wait_timeout": 240,
-      "gas_limit": 800000,
-      "cloudwatch": {
-        "metric_name": "ROC-MAINNET",
-        "dimensions_name": "JOBS",
-        "dimensions_value": "Error",
-        "namespace": "MOC/EXCEPTIONS"
-      }
+      "gas_limit": 800000
+    },
+    "refresh_ac_balance": {
+      "interval": 120,
+      "wait_timeout": 240,
+      "gas_limit": 200000
     },
     "commission_splitters": [
       {
-        "interval": 5,
+        "interval": 20,
         "wait_timeout": 240,
         "gas_limit": 1000000,
-        "address": "0x5325AD7b21bAF90aEfCe3D6a83075d7590B6e049",
+        "address": "0x60Ceef03Aa1aa96263e297D220Ee4Ebc3C6B6e47",
+        "min_balance": 1000000000000000000000,
+        "min_balance_fee_token": 1000000000000000000000,
+        "ac_token": "0x2AcC95758f8b5F583470ba265EB685a8F45fC9D5",
+        "fee_token": "0x9aC7Fe28967b30e3a4E6E03286D715B42B453d10"
+      },
+      {
+        "interval": 20,
+        "wait_timeout": 240,
+        "gas_limit": 1000000,
+        "address": "0x114921bcBd5fc34E103494D338cA492B9400b0fd",
         "min_balance": 1000000000000000000000,
         "min_balance_fee_token": 1000000000000000000000,
         "ac_token": "0x2AcC95758f8b5F583470ba265EB685a8F45fC9D5",

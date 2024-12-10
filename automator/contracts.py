@@ -152,6 +152,25 @@ class Moc(Contract):
 
         return tx_hash
 
+    def refresh_ac_balance(
+            self,
+            *args,
+            **kwargs):
+
+        tx_hash = self.connection_manager.send_function_transaction(
+            self.sc.functions.refreshACBalance,
+            *args,
+            **kwargs
+        )
+
+        return tx_hash
+
+    def ac_balance_collateral_bag(self):
+        return self.sc.functions.nACcb().call()
+
+    def ac_token(self):
+        return self.sc.functions.acToken().call()
+
 
 class MoCMedianizer(Contract):
 

@@ -13,6 +13,7 @@ run async of the app, and call directly to the contract through node.
  3. Pay TC Holders Interest if it's the time
  4. Oracle Compute: Check expiration of price in Oracle.
  5. Run Commission Splitter if need it
+ 6. Refresh AC Balance
  
 ### Usage
 
@@ -72,7 +73,6 @@ automator_v2
 **Flipmoney implementation v2**
 
 *[https://github.com/money-on-chain/stable-protocol-roc-v2](https://github.com/money-on-chain/stable-protocol-roc-v2)*
-
 
 **Money on Chain implementation v2**
 

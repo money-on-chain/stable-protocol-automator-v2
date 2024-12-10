@@ -11,7 +11,7 @@ from .logger import log
 from .utils import aws_put_metric_heart_beat
 
 
-__VERSION__ = '1.0.6'
+__VERSION__ = '1.0.7'
 
 
 log.info("Starting Stable Protocol Automator version {0}".format(__VERSION__))
@@ -299,6 +299,56 @@ class Automator(PendingTransactionsTasksManager):
 
         return task_result
 
+    @on_pending_transactions
+    def refresh_ac_balance(self, task=None, global_manager=None, task_result=None):
+
+        ac_balance = self.contracts_loaded["CA_TOKEN"].balance_of(self.contracts_loaded["Moc"].contract_address)
+        ac_balance_collateral_bag = Web3.from_wei(self.contracts_loaded["Moc"].ac_balance_collateral_bag(), 'ether')
+
+        if ac_balance > ac_balance_collateral_bag:
+
+            # return if there are pending transactions
+            if task_result.get('pending_transactions', None):
+                return task_result
+
+            web3 = self.connection_helper.connection_manager.web3
+
+            nonce = web3.eth.get_transaction_count(
+                self.connection_helper.connection_manager.accounts[0].address, "pending")
+
+            # get gas price from node
+            node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
+
+            # Multiply factor of the using gas price
+            calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+
+            try:
+                tx_hash = self.contracts_loaded["Moc"].refresh_ac_balance(
+                    gas_limit=self.config['tasks']['refresh_ac_balance']['gas_limit'],
+                    gas_price=int(calculated_gas_price * 10 ** 18),
+                    nonce=nonce
+                )
+            except ValueError as err:
+                log.error("Task :: {0} :: Error sending transaction! \n {1}".format(task.task_name, err))
+                return task_result
+
+            if tx_hash:
+                new_tx = dict()
+                new_tx['hash'] = tx_hash
+                new_tx['timestamp'] = datetime.datetime.now()
+                new_tx['gas_price'] = calculated_gas_price
+                new_tx['nonce'] = nonce
+                new_tx['timeout'] = self.config['tasks']['refresh_ac_balance']['wait_timeout']
+                task_result['pending_transactions'].append(new_tx)
+
+                log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
+                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(calculated_gas_price * 10 ** 18)))
+
+        else:
+            log.info("Task :: {0} :: No!".format(task.task_name))
+
+        return task_result
+
 
 class AutomatorTasks(Automator):
 
@@ -331,6 +381,12 @@ class AutomatorTasks(Automator):
             self.connection_helper.connection_manager,
             contract_address=self.config['addresses']['Moc'])
         self.contracts_addresses['Moc'] = self.contracts_loaded["Moc"].address().lower()
+
+        if self.config['collateral'] == 'rc20':
+            ac_token = self.contracts_loaded["Moc"].ac_token()
+            self.contracts_loaded["CA_TOKEN"] = ERC20Token(
+                self.connection_helper.connection_manager,
+                contract_address=ac_token)
 
         # MoCMedianizer
         if 'oracle_poke' in self.config['tasks']:
@@ -428,6 +484,16 @@ class AutomatorTasks(Automator):
                               timeout=180,
                               task_name="5. Commission Splitter: {0}".format(setting_commission['address']))
                 count += 1
+
+        # Refresh AC Balance (after commission spliter execution)
+        if 'refresh_ac_balance' in self.config['tasks'] and self.config['collateral'] == 'rc20':
+            log.info("Jobs add: 6. Refresh AC Balance")
+            interval = self.config['tasks']['refresh_ac_balance']['interval']
+            self.add_task(self.refresh_ac_balance,
+                          args=[],
+                          wait=interval,
+                          timeout=180,
+                          task_name='6. Refresh AC Balance')
 
         # Set max workers
         self.max_tasks = len(self.tasks)

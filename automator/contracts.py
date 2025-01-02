@@ -171,6 +171,9 @@ class Moc(Contract):
     def ac_token(self):
         return self.sc.functions.acToken().call()
 
+    def locked_in_pending(self):
+        return self.sc.functions.qACLockedInPending().call()
+
 
 class MoCMedianizer(Contract):
 

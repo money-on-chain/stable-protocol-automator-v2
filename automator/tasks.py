@@ -304,8 +304,9 @@ class Automator(PendingTransactionsTasksManager):
 
         ac_balance = self.contracts_loaded["CA_TOKEN"].balance_of(self.contracts_loaded["Moc"].contract_address)
         ac_balance_collateral_bag = Web3.from_wei(self.contracts_loaded["Moc"].ac_balance_collateral_bag(), 'ether')
+        locked_in_pending = Web3.from_wei(self.contracts_loaded["Moc"].locked_in_pending(), 'ether')
 
-        if ac_balance > ac_balance_collateral_bag:
+        if ac_balance > ac_balance_collateral_bag + locked_in_pending:
 
             # return if there are pending transactions
             if task_result.get('pending_transactions', None):

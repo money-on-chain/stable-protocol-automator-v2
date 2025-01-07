@@ -6,17 +6,17 @@
   "gas_price_multiply_factor": 1.01,
   "tasks": {
     "execute_settlement": {
-      "interval": 5,
+      "interval": 40,
       "wait_timeout": 240,
-      "gas_limit": 4500000
+      "gas_limit": 1500000
     },
     "calculate_ema": {
-      "interval": 5,
+      "interval": 40,
       "wait_timeout": 240,
-      "gas_limit": 2000000
+      "gas_limit": 1500000
     },
     "tc_holders_interest_payment": {
-      "interval": 5,
+      "interval": 40,
       "wait_timeout": 240,
       "gas_limit": 1000000
     }

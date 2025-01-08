@@ -3,7 +3,8 @@
   "collateral": "rc20",
   "chain_id": 31,
   "timeout": 180,
-  "gas_price_multiply_factor": 1.01,
+  "max_fee_per_gas": 80000000000,
+  "max_priority_fee_per_gas": 2000000000,
   "tasks": {
     "execute_settlement": {
       "interval": 5,

@@ -3,21 +3,21 @@
   "collateral": "coinbase",
   "chain_id": 11155111,
   "timeout": 180,
-  "gas_price_multiply_factor": 1.01,
+  "gas_price_multiply_factor": 1.1,
   "tasks": {
     "execute_settlement": {
       "interval": 40,
-      "wait_timeout": 240,
+      "wait_timeout": 900,
       "gas_limit": 1500000
     },
     "calculate_ema": {
       "interval": 40,
-      "wait_timeout": 240,
+      "wait_timeout": 900,
       "gas_limit": 1500000
     },
     "tc_holders_interest_payment": {
       "interval": 40,
-      "wait_timeout": 240,
+      "wait_timeout": 900,
       "gas_limit": 1000000
     }
   },

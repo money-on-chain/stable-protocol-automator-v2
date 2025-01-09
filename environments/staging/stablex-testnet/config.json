@@ -9,17 +9,17 @@
     "execute_settlement": {
       "interval": 40,
       "wait_timeout": 900,
-      "gas_limit": 1500000
+      "gas_limit": 900000
     },
     "calculate_ema": {
       "interval": 40,
       "wait_timeout": 900,
-      "gas_limit": 1500000
+      "gas_limit": 900000
     },
     "tc_holders_interest_payment": {
       "interval": 40,
       "wait_timeout": 900,
-      "gas_limit": 1000000
+      "gas_limit": 900000
     }
   },
   "addresses": {

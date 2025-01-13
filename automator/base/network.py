@@ -34,7 +34,8 @@ class ConnectionManager(BaseConnectionManager):
     def __init__(self,
                  uris=None,
                  request_timeout=180,
-                 chain_id=31
+                 chain_id=31,
+                 cache_requests=True
                  ):
 
         # Parameters
@@ -44,6 +45,9 @@ class ConnectionManager(BaseConnectionManager):
 
         # connect to node
         self.web3 = self.connect_node()
+
+        # cache requests
+        self.web3.provider.cache_allowed_requests = cache_requests
 
         # scan accounts
         self.scan_accounts()

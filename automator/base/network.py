@@ -42,12 +42,10 @@ class ConnectionManager(BaseConnectionManager):
         self.uris = uris
         self.request_timeout = request_timeout
         self.chain_id = chain_id
+        self.allow_cache_requests = allow_cache_requests
 
         # connect to node
         self.web3 = self.connect_node()
-
-        # Allow cache requests?
-        self.allow_cache_requests = allow_cache_requests
 
         # scan accounts
         self.scan_accounts()

@@ -7,17 +7,17 @@
   "max_priority_fee_per_gas": 2000000000,
   "tasks": {
     "execute_settlement": {
-      "interval": 40,
+      "interval": 80,
       "wait_timeout": 900,
       "gas_limit": 900000
     },
     "calculate_ema": {
-      "interval": 40,
+      "interval": 80,
       "wait_timeout": 900,
       "gas_limit": 900000
     },
     "tc_holders_interest_payment": {
-      "interval": 40,
+      "interval": 80,
       "wait_timeout": 900,
       "gas_limit": 900000
     }

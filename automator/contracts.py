@@ -94,14 +94,14 @@ class Multicall2(Contract):
         return results[0], decoded_results, d_validity
 
 
-class Moc(Contract):
+class MocCARC20(Contract):
 
     log = logging.getLogger()
     precision = 10 ** 18
 
-    contract_name = 'Moc'
+    contract_name = 'MocCARC20'
     contract_abi = Contract.content_abi_file(
-        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/flipmoney/Moc.abi'))
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/MocCARC20.abi'))
 
     def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
 
@@ -173,6 +173,27 @@ class Moc(Contract):
 
     def locked_in_pending(self):
         return self.sc.functions.qACLockedInPending().call()
+
+
+
+class MocCACoinbase(MocCARC20):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'MocCACoinbase'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/MocCACoinbase.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
 
 
 class MoCMedianizer(Contract):

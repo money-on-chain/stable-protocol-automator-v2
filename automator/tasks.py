@@ -2,7 +2,7 @@ import decimal
 from web3 import Web3
 import datetime
 
-from .contracts import Multicall2, Moc, MoCMedianizer, CommissionSplitter
+from .contracts import Multicall2, MocCARC20, MocCACoinbase, MoCMedianizer, CommissionSplitter
 
 from .base.main import ConnectionHelperBase
 from .base.token import ERC20Token
@@ -11,7 +11,7 @@ from .logger import log
 from .utils import aws_put_metric_heart_beat
 
 
-__VERSION__ = '1.0.8'
+__VERSION__ = '1.0.10'
 
 
 log.info("Starting Stable Protocol Automator version {0}".format(__VERSION__))
@@ -33,31 +33,51 @@ class Automator(PendingTransactionsTasksManager):
                          self.connection_helper,
                          self.contracts_loaded)
 
-    @on_pending_transactions
-    def calculate_ema(self, task=None, global_manager=None, task_result=None):
+    def info_tx(self):
 
-        if self.contracts_loaded["Moc"].sc.functions.shouldCalculateEma().call():
+        web3 = self.connection_helper.connection_manager.web3
+
+        nonce = web3.eth.get_transaction_count(
+            self.connection_helper.connection_manager.accounts[0].address, "pending")
+
+        # get gas price from node
+        node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
+
+        # Multiply factor of the using gas price
+        calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+        max_fee_per_gas = None
+        if max_fee_per_gas in self.config:
+            max_fee_per_gas = self.config['max_fee_per_gas']
+        max_priority_fee_per_gas = None
+        if max_priority_fee_per_gas in self.config:
+            max_priority_fee_per_gas = self.config['max_priority_fee_per_gas']
+
+        return dict(
+            nonce=nonce,
+            calculated_gas_price=calculated_gas_price,
+            max_fee_per_gas=max_fee_per_gas,
+            max_priority_fee_per_gas=max_priority_fee_per_gas
+        )
+
+    @on_pending_transactions
+    def calculate_ema(self, index, task=None, global_manager=None, task_result=None):
+
+        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
+        if contract_moc.sc.functions.shouldCalculateEma().call():
 
             # return if there are pending transactions
             if task_result.get('pending_transactions', None):
                 return task_result
 
-            web3 = self.connection_helper.connection_manager.web3
-
-            nonce = web3.eth.get_transaction_count(
-                self.connection_helper.connection_manager.accounts[0].address, "pending")
-
-            # get gas price from node
-            node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
-
-            # Multiply factor of the using gas price
-            calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+            info_transaction = self.info_tx()
 
             try:
-                tx_hash = self.contracts_loaded["Moc"].update_emas(
+                tx_hash = contract_moc.update_emas(
                     gas_limit=self.config['tasks']['calculate_ema']['gas_limit'],
-                    gas_price=int(calculated_gas_price * 10 ** 18),
-                    nonce=nonce
+                    gas_price=int(info_transaction['calculated_gas_price'] * 10 ** 18),
+                    max_fee_per_gas=info_transaction['max_fee_per_gas'],
+                    max_priority_fee_per_gas=info_transaction['max_priority_fee_per_gas'],
+                    nonce=info_transaction['nonce']
                 )
             except ValueError as err:
                 log.error("Task :: {0} :: Error sending transaction! \n {1}".format(task.task_name, err))
@@ -67,13 +87,13 @@ class Automator(PendingTransactionsTasksManager):
                 new_tx = dict()
                 new_tx['hash'] = tx_hash
                 new_tx['timestamp'] = datetime.datetime.now()
-                new_tx['gas_price'] = calculated_gas_price
-                new_tx['nonce'] = nonce
+                new_tx['gas_price'] = info_transaction['calculated_gas_price']
+                new_tx['nonce'] = info_transaction['nonce']
                 new_tx['timeout'] = self.config['tasks']['calculate_ema']['wait_timeout']
                 task_result['pending_transactions'].append(new_tx)
 
                 log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
-                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(calculated_gas_price * 10 ** 18)))
+                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(info_transaction['calculated_gas_price'] * 10 ** 18)))
 
         else:
             log.info("Task :: {0} :: No!".format(task.task_name))
@@ -81,32 +101,31 @@ class Automator(PendingTransactionsTasksManager):
         return task_result
 
     @on_pending_transactions
-    def execute_settlement(self, task=None, global_manager=None, task_result=None):
+    def execute_settlement(self, index, task=None, global_manager=None, task_result=None):
+
+        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
+
+        web3 = self.connection_helper.connection_manager.web3
+        last_block_timestamp = web3.eth.get_block(web3.eth.block_number).timestamp
 
         # Get if block to settlement > 0 to continue
-        get_bts = self.contracts_loaded["Moc"].sc.functions.getBts().call()
-        if get_bts <= 0:
+        next_settlement_time = contract_moc.sc.functions.nextSettlementTime().call()
+
+        if next_settlement_time < last_block_timestamp:
 
             # return if there are pending transactions
             if task_result.get('pending_transactions', None):
                 return task_result
 
-            web3 = self.connection_helper.connection_manager.web3
-
-            nonce = web3.eth.get_transaction_count(
-                self.connection_helper.connection_manager.accounts[0].address, "pending")
-
-            # get gas price from node
-            node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
-
-            # Multiply factor of the using gas price
-            calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+            info_transaction = self.info_tx()
 
             try:
-                tx_hash = self.contracts_loaded["Moc"].execute_settlement(
+                tx_hash = contract_moc.execute_settlement(
                     gas_limit=self.config['tasks']['execute_settlement']['gas_limit'],
-                    gas_price=int(calculated_gas_price * 10 ** 18),
-                    nonce=nonce
+                    gas_price=int(info_transaction['calculated_gas_price'] * 10 ** 18),
+                    max_fee_per_gas=info_transaction['max_fee_per_gas'],
+                    max_priority_fee_per_gas=info_transaction['max_priority_fee_per_gas'],
+                    nonce=info_transaction['nonce']
                 )
             except ValueError as err:
                 log.error("Task :: {0} :: Error sending transaction! \n {1}".format(task.task_name, err))
@@ -116,13 +135,13 @@ class Automator(PendingTransactionsTasksManager):
                 new_tx = dict()
                 new_tx['hash'] = tx_hash
                 new_tx['timestamp'] = datetime.datetime.now()
-                new_tx['gas_price'] = calculated_gas_price
-                new_tx['nonce'] = nonce
+                new_tx['gas_price'] = info_transaction['calculated_gas_price']
+                new_tx['nonce'] = info_transaction['nonce']
                 new_tx['timeout'] = self.config['tasks']['execute_settlement']['wait_timeout']
                 task_result['pending_transactions'].append(new_tx)
 
                 log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
-                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(calculated_gas_price * 10 ** 18)))
+                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(info_transaction['calculated_gas_price'] * 10 ** 18)))
 
         else:
             log.info("Task :: {0} :: No!".format(task.task_name))
@@ -130,10 +149,12 @@ class Automator(PendingTransactionsTasksManager):
         return task_result
 
     @on_pending_transactions
-    def tc_holders_interest_payment(self, task=None, global_manager=None, task_result=None):
+    def tc_holders_interest_payment(self, index, task=None, global_manager=None, task_result=None):
+
+        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
 
         # Get if block to settlement > 0 to continue
-        next_payment_block = self.contracts_loaded["Moc"].sc.functions.nextTCInterestPayment().call()
+        next_payment_block = contract_moc.sc.functions.nextTCInterestPayment().call()
         current_block = self.connection_helper.connection_manager.block_number
         if current_block > next_payment_block:
 
@@ -141,22 +162,15 @@ class Automator(PendingTransactionsTasksManager):
             if task_result.get('pending_transactions', None):
                 return task_result
 
-            web3 = self.connection_helper.connection_manager.web3
-
-            nonce = web3.eth.get_transaction_count(
-                self.connection_helper.connection_manager.accounts[0].address, "pending")
-
-            # get gas price from node
-            node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
-
-            # Multiply factor of the using gas price
-            calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+            info_transaction = self.info_tx()
 
             try:
-                tx_hash = self.contracts_loaded["Moc"].tc_holders_interest_payment(
+                tx_hash = contract_moc.tc_holders_interest_payment(
                     gas_limit=self.config['tasks']['tc_holders_interest_payment']['gas_limit'],
-                    gas_price=int(calculated_gas_price * 10 ** 18),
-                    nonce=nonce
+                    gas_price=int(info_transaction['calculated_gas_price'] * 10 ** 18),
+                    max_fee_per_gas=info_transaction['max_fee_per_gas'],
+                    max_priority_fee_per_gas=info_transaction['max_priority_fee_per_gas'],
+                    nonce=info_transaction['nonce']
                 )
             except ValueError as err:
                 log.error("Task :: {0} :: Error sending transaction! \n {1}".format(task.task_name, err))
@@ -166,13 +180,13 @@ class Automator(PendingTransactionsTasksManager):
                 new_tx = dict()
                 new_tx['hash'] = tx_hash
                 new_tx['timestamp'] = datetime.datetime.now()
-                new_tx['gas_price'] = calculated_gas_price
-                new_tx['nonce'] = nonce
+                new_tx['gas_price'] = info_transaction['calculated_gas_price']
+                new_tx['nonce'] = info_transaction['nonce']
                 new_tx['timeout'] = self.config['tasks']['tc_holders_interest_payment']['wait_timeout']
                 task_result['pending_transactions'].append(new_tx)
 
                 log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
-                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(calculated_gas_price * 10 ** 18)))
+                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(info_transaction['calculated_gas_price'] * 10 ** 18)))
 
         else:
             log.info("Task :: {0} :: No!".format(task.task_name))
@@ -189,22 +203,15 @@ class Automator(PendingTransactionsTasksManager):
             if task_result.get('pending_transactions', None):
                 return task_result
 
-            web3 = self.connection_helper.connection_manager.web3
-
-            nonce = web3.eth.get_transaction_count(
-                self.connection_helper.connection_manager.accounts[0].address, "pending")
-
-            # get gas price from node
-            node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
-
-            # Multiply factor of the using gas price
-            calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+            info_transaction = self.info_tx()
 
             try:
                 tx_hash = self.contracts_loaded["MoCMedianizer"].poke(
                     gas_limit=self.config['tasks']['oracle_poke']['gas_limit'],
-                    gas_price=int(calculated_gas_price * 10 ** 18),
-                    nonce=nonce
+                    gas_price=int(info_transaction['calculated_gas_price'] * 10 ** 18),
+                    max_fee_per_gas=info_transaction['max_fee_per_gas'],
+                    max_priority_fee_per_gas=info_transaction['max_priority_fee_per_gas'],
+                    nonce=info_transaction['nonce']
                 )
             except ValueError as err:
                 log.error("Task :: {0} :: Error sending transaction! \n {1}".format(task.task_name, err))
@@ -214,13 +221,13 @@ class Automator(PendingTransactionsTasksManager):
                 new_tx = dict()
                 new_tx['hash'] = tx_hash
                 new_tx['timestamp'] = datetime.datetime.now()
-                new_tx['gas_price'] = calculated_gas_price
-                new_tx['nonce'] = nonce
+                new_tx['gas_price'] = info_transaction['calculated_gas_price']
+                new_tx['nonce'] = info_transaction['nonce']
                 new_tx['timeout'] = self.config['tasks']['oracle_poke']['wait_timeout']
                 task_result['pending_transactions'].append(new_tx)
 
                 log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
-                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(calculated_gas_price * 10 ** 18)))
+                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(info_transaction['calculated_gas_price'] * 10 ** 18)))
 
             log.error("Task :: {0} :: Not valid price! Disabling Price!".format(task.task_name))
             aws_put_metric_heart_beat(self.config['tasks']['oracle_poke']['cloudwatch'], 1)
@@ -261,22 +268,15 @@ class Automator(PendingTransactionsTasksManager):
                 Web3.from_wei(token_balance, 'ether'),
                 Web3.from_wei(fee_token_balance, 'ether')))
 
-            web3 = self.connection_helper.connection_manager.web3
-
-            nonce = web3.eth.get_transaction_count(
-                self.connection_helper.connection_manager.accounts[0].address, "pending")
-
-            # get gas price from node
-            node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
-
-            # Multiply factor of the using gas price
-            calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+            info_transaction = self.info_tx()
 
             try:
                 tx_hash = self.contracts_loaded["CommissionSplitter_{0}".format(index)].split(
                     gas_limit=commission_setting['gas_limit'],
-                    gas_price=int(calculated_gas_price * 10 ** 18),
-                    nonce=nonce
+                    gas_price=int(info_transaction['calculated_gas_price'] * 10 ** 18),
+                    max_fee_per_gas=info_transaction['max_fee_per_gas'],
+                    max_priority_fee_per_gas=info_transaction['max_priority_fee_per_gas'],
+                    nonce=info_transaction['nonce']
                 )
             except ValueError as err:
                 log.error("Task :: {0} :: Error sending transaction! \n {1}".format(task.task_name, err))
@@ -286,13 +286,13 @@ class Automator(PendingTransactionsTasksManager):
                 new_tx = dict()
                 new_tx['hash'] = tx_hash
                 new_tx['timestamp'] = datetime.datetime.now()
-                new_tx['gas_price'] = calculated_gas_price
-                new_tx['nonce'] = nonce
+                new_tx['gas_price'] = info_transaction['calculated_gas_price']
+                new_tx['nonce'] = info_transaction['nonce']
                 new_tx['timeout'] = commission_setting['wait_timeout']
                 task_result['pending_transactions'].append(new_tx)
 
                 log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
-                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(calculated_gas_price * 10 ** 18)))
+                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(info_transaction['calculated_gas_price'] * 10 ** 18)))
 
         else:
             log.info("Task :: {0} :: No!".format(task.task_name))
@@ -300,11 +300,14 @@ class Automator(PendingTransactionsTasksManager):
         return task_result
 
     @on_pending_transactions
-    def refresh_ac_balance(self, task=None, global_manager=None, task_result=None):
+    def refresh_ac_balance(self, index, index_token, task=None, global_manager=None, task_result=None):
 
-        ac_balance = self.contracts_loaded["CA_TOKEN"].balance_of(self.contracts_loaded["Moc"].contract_address)
-        ac_balance_collateral_bag = Web3.from_wei(self.contracts_loaded["Moc"].ac_balance_collateral_bag(), 'ether')
-        locked_in_pending = Web3.from_wei(self.contracts_loaded["Moc"].locked_in_pending(), 'ether')
+        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
+        contract_token = self.contracts_loaded["CA_TOKEN_{0}".format(index_token)]
+
+        ac_balance = contract_token.balance_of(contract_moc.contract_address)
+        ac_balance_collateral_bag = Web3.from_wei(contract_moc.ac_balance_collateral_bag(), 'ether')
+        locked_in_pending = Web3.from_wei(contract_moc.locked_in_pending(), 'ether')
 
         if ac_balance > ac_balance_collateral_bag + locked_in_pending:
 
@@ -312,22 +315,15 @@ class Automator(PendingTransactionsTasksManager):
             if task_result.get('pending_transactions', None):
                 return task_result
 
-            web3 = self.connection_helper.connection_manager.web3
-
-            nonce = web3.eth.get_transaction_count(
-                self.connection_helper.connection_manager.accounts[0].address, "pending")
-
-            # get gas price from node
-            node_gas_price = decimal.Decimal(Web3.from_wei(web3.eth.gas_price, 'ether'))
-
-            # Multiply factor of the using gas price
-            calculated_gas_price = node_gas_price * decimal.Decimal(self.config['gas_price_multiply_factor'])
+            info_transaction = self.info_tx()
 
             try:
-                tx_hash = self.contracts_loaded["Moc"].refresh_ac_balance(
+                tx_hash = contract_moc.refresh_ac_balance(
                     gas_limit=self.config['tasks']['refresh_ac_balance']['gas_limit'],
-                    gas_price=int(calculated_gas_price * 10 ** 18),
-                    nonce=nonce
+                    gas_price=int(info_transaction['calculated_gas_price'] * 10 ** 18),
+                    max_fee_per_gas=info_transaction['max_fee_per_gas'],
+                    max_priority_fee_per_gas=info_transaction['max_priority_fee_per_gas'],
+                    nonce=info_transaction['nonce']
                 )
             except ValueError as err:
                 log.error("Task :: {0} :: Error sending transaction! \n {1}".format(task.task_name, err))
@@ -337,13 +333,13 @@ class Automator(PendingTransactionsTasksManager):
                 new_tx = dict()
                 new_tx['hash'] = tx_hash
                 new_tx['timestamp'] = datetime.datetime.now()
-                new_tx['gas_price'] = calculated_gas_price
-                new_tx['nonce'] = nonce
+                new_tx['gas_price'] = info_transaction['calculated_gas_price']
+                new_tx['nonce'] = info_transaction['nonce']
                 new_tx['timeout'] = self.config['tasks']['refresh_ac_balance']['wait_timeout']
                 task_result['pending_transactions'].append(new_tx)
 
                 log.info("Task :: {0} :: Sending TX :: Hash: [{1}] Nonce: [{2}] Gas Price: [{3}]".format(
-                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(calculated_gas_price * 10 ** 18)))
+                    task.task_name, Web3.to_hex(new_tx['hash']), new_tx['nonce'], int(info_transaction['calculated_gas_price'] * 10 ** 18)))
 
         else:
             log.info("Task :: {0} :: No!".format(task.task_name))
@@ -377,17 +373,29 @@ class AutomatorTasks(Automator):
 
         log.info("Getting addresses from Main Contract...")
 
-        # Moc
-        self.contracts_loaded["Moc"] = Moc(
-            self.connection_helper.connection_manager,
-            contract_address=self.config['addresses']['Moc'])
-        self.contracts_addresses['Moc'] = self.contracts_loaded["Moc"].address().lower()
+        # Multi-collateral MOC
 
-        if self.config['collateral'] == 'rc20':
-            ac_token = self.contracts_loaded["Moc"].ac_token()
-            self.contracts_loaded["CA_TOKEN"] = ERC20Token(
+        count = 0
+        count_ca_token = 0
+        for moc_address in self.config['addresses']['Moc']:
+
+            contract_interface = MocCACoinbase
+            if self.config['collateral'][count]['type'] == 'rc20':
+                contract_interface = MocCARC20
+
+            self.contracts_loaded["Moc_{0}".format(count)] = contract_interface(
                 self.connection_helper.connection_manager,
-                contract_address=ac_token)
+                contract_address=moc_address)
+            self.contracts_addresses["Moc_{0}".format(count)] = self.contracts_loaded["Moc_{0}".format(count)].address().lower()
+
+            if self.config['collateral'][count]['type'] == 'rc20':
+                ac_token = self.contracts_loaded["Moc_{0}".format(count)].ac_token()
+                self.contracts_loaded["CA_TOKEN_{0}".format(count_ca_token)] = ERC20Token(
+                    self.connection_helper.connection_manager,
+                    contract_address=ac_token)
+                count_ca_token += 1
+
+            count += 1
 
         # MoCMedianizer
         if 'oracle_poke' in self.config['tasks']:
@@ -433,35 +441,38 @@ class AutomatorTasks(Automator):
         # set max workers
         self.max_workers = 1
 
-        # run_settlement
-        if 'execute_settlement' in self.config['tasks']:
-            log.info("Jobs add: 1. Execute Settlement")
-            interval = self.config['tasks']['execute_settlement']['interval']
-            self.add_task(self.execute_settlement,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='1. Execute Settlement')
+        count = 0
+        for moc_address in self.config['addresses']['Moc']:
+            # run_settlement
+            if 'execute_settlement' in self.config['tasks']:
+                log.info("Jobs add: 1. Execute Settlement. Bucket: %s" % moc_address)
+                interval = self.config['tasks']['execute_settlement']['interval']
+                self.add_task(self.execute_settlement,
+                              args=[count],
+                              wait=interval,
+                              timeout=180,
+                              task_name='1. Execute Settlement. Bucket: %s' % moc_address)
 
-        # calculate EMA
-        if 'calculate_ema' in self.config['tasks']:
-            log.info("Jobs add: 2. Calculate EMA")
-            interval = self.config['tasks']['calculate_ema']['interval']
-            self.add_task(self.calculate_ema,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='2. Calculate EMA')
+            # calculate EMA
+            if 'calculate_ema' in self.config['tasks']:
+                log.info("Jobs add: 2. Calculate EMA. Bucket: %s" % moc_address)
+                interval = self.config['tasks']['calculate_ema']['interval']
+                self.add_task(self.calculate_ema,
+                              args=[count],
+                              wait=interval,
+                              timeout=180,
+                              task_name='2. Calculate EMA. Bucket: %s' % moc_address)
 
-        # tc_holders_interest_payment
-        if 'tc_holders_interest_payment' in self.config['tasks']:
-            log.info("Jobs add: 3. Run TC Holders Interest Payment")
-            interval = self.config['tasks']['tc_holders_interest_payment']['interval']
-            self.add_task(self.tc_holders_interest_payment,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='3. Run TC Holders Interest Payment')
+            # tc_holders_interest_payment
+            if 'tc_holders_interest_payment' in self.config['tasks']:
+                log.info("Jobs add: 3. Run TC Holders Interest Payment. Bucket: %s" % moc_address)
+                interval = self.config['tasks']['tc_holders_interest_payment']['interval']
+                self.add_task(self.tc_holders_interest_payment,
+                              args=[count],
+                              wait=interval,
+                              timeout=180,
+                              task_name='3. Run TC Holders Interest Payment. Bucket: %s' % moc_address)
+            count += 1
 
         # Oracle Poke
         if 'oracle_poke' in self.config['tasks']:
@@ -487,14 +498,20 @@ class AutomatorTasks(Automator):
                 count += 1
 
         # Refresh AC Balance (after commission spliter execution)
-        if 'refresh_ac_balance' in self.config['tasks'] and self.config['collateral'] == 'rc20':
-            log.info("Jobs add: 6. Refresh AC Balance")
-            interval = self.config['tasks']['refresh_ac_balance']['interval']
-            self.add_task(self.refresh_ac_balance,
-                          args=[],
-                          wait=interval,
-                          timeout=180,
-                          task_name='6. Refresh AC Balance')
+        if 'refresh_ac_balance' in self.config['tasks']:
+            count = 0
+            count_token = 0
+            for collateral in self.config['collateral']:
+                if collateral['type'] == 'rc20':
+                    log.info("Jobs add: 6. Refresh AC Balance. Index: %s" % count)
+                    interval = self.config['tasks']['refresh_ac_balance']['interval']
+                    self.add_task(self.refresh_ac_balance,
+                                  args=[count, count_token],
+                                  wait=interval,
+                                  timeout=180,
+                                  task_name='6. Refresh AC Balance. Index: %s' % count)
+                    count_token += 1
+                count += 1
 
         # Set max workers
         self.max_tasks = len(self.tasks)

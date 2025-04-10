@@ -1,8 +1,9 @@
 import decimal
 from web3 import Web3
+from web3.exceptions import Web3RPCError
 import datetime
 
-from .contracts import Multicall2, MocCARC20, MocCACoinbase, MoCMedianizer, CommissionSplitter
+from .contracts import Multicall2, MocCARC20, MocCACoinbase, MoCMedianizer, CommissionSplitter, PriceProvider
 
 from .base.main import ConnectionHelperBase
 from .base.token import ERC20Token
@@ -59,6 +60,15 @@ class Automator(PendingTransactionsTasksManager):
             max_priority_fee_per_gas=max_priority_fee_per_gas
         )
 
+    def is_valid_tp_price(self):
+        valid = True
+        for pp in self.contracts_loaded["PriceProviders"]:
+            price_item = pp.peek()
+            valid = price_item[1]
+            if not valid:
+                break
+        return valid
+
     @on_pending_transactions
     def calculate_ema(self, index, task=None, global_manager=None, task_result=None):
 
@@ -68,6 +78,11 @@ class Automator(PendingTransactionsTasksManager):
             # return if there are pending transactions
             if task_result.get('pending_transactions', None):
                 return task_result
+
+            # check if is valid price before send
+            if not self.is_valid_tp_price():
+                log.error("Task :: {0} :: Error not valid TP price provider!".format(task.task_name))
+                return
 
             info_transaction = self.info_tx()
 
@@ -117,6 +132,11 @@ class Automator(PendingTransactionsTasksManager):
             if task_result.get('pending_transactions', None):
                 return task_result
 
+            # check if is valid price before send
+            if not self.is_valid_tp_price():
+                log.error("Task :: {0} :: Error not valid TP price provider!".format(task.task_name))
+                return
+
             info_transaction = self.info_tx()
 
             try:
@@ -161,6 +181,11 @@ class Automator(PendingTransactionsTasksManager):
             # return if there are pending transactions
             if task_result.get('pending_transactions', None):
                 return task_result
+
+            # check if is valid price before send
+            if not self.is_valid_tp_price():
+                log.error("Task :: {0} :: Error not valid TP price provider!".format(task.task_name))
+                return
 
             info_transaction = self.info_tx()
 
@@ -347,6 +372,8 @@ class Automator(PendingTransactionsTasksManager):
         return task_result
 
 
+MAX_TP_RANGE = 4
+
 class AutomatorTasks(Automator):
 
     def __init__(self, config):
@@ -374,7 +401,6 @@ class AutomatorTasks(Automator):
         log.info("Getting addresses from Main Contract...")
 
         # Multi-collateral MOC
-
         count = 0
         count_ca_token = 0
         for moc_address in self.config['addresses']['Moc']:
@@ -396,6 +422,33 @@ class AutomatorTasks(Automator):
                 count_ca_token += 1
 
             count += 1
+
+        # Get TP Price provider... in multi-collateral we have the assumption that all collateral
+        # have the same TPs, this why only watch the first collateral only
+
+        price_providers = []
+        for i in range(MAX_TP_RANGE):
+            try:
+                tp_address = self.contracts_loaded["Moc_0"].tp_tokens(i)
+            except Web3RPCError:
+                continue
+            if not tp_address:
+                break
+            tp_index = self.contracts_loaded["Moc_0"].pegged_token_index(tp_address)
+            # result: tp_index = [index, enabled]
+            if not tp_index:
+                break
+            tp_item = self.contracts_loaded["Moc_0"].peg_container(tp_index[0])
+            # result: tp_item = [index, price provider]
+            price_providers.append(tp_item[1])
+
+        # load TP price providers
+        self.contracts_loaded["PriceProviders"] = []
+        for pp_address in price_providers:
+            pp = PriceProvider(
+                self.connection_helper.connection_manager,
+                contract_address=pp_address)
+            self.contracts_loaded["PriceProviders"].append(pp)
 
         # MoCMedianizer
         if 'oracle_poke' in self.config['tasks']:

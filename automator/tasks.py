@@ -3,7 +3,7 @@ from web3 import Web3
 from web3.exceptions import Web3RPCError
 import datetime
 
-from .contracts import Multicall2, MocCARC20, MocCACoinbase, MoCMedianizer, CommissionSplitter, PriceProvider
+from .contracts import MocCARC20, MocCACoinbase, MoCMedianizer, CommissionSplitter, PriceProvider, MocMultiCollateralGuard
 
 from .base.main import ConnectionHelperBase
 from .base.token import ERC20Token
@@ -72,7 +72,7 @@ class Automator(PendingTransactionsTasksManager):
     @on_pending_transactions
     def calculate_ema(self, index, task=None, global_manager=None, task_result=None):
 
-        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
+        contract_moc = self.contracts_loaded["Moc"][index]
         if contract_moc.sc.functions.shouldCalculateEma().call():
 
             # return if there are pending transactions
@@ -118,7 +118,7 @@ class Automator(PendingTransactionsTasksManager):
     @on_pending_transactions
     def execute_settlement(self, index, task=None, global_manager=None, task_result=None):
 
-        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
+        contract_moc = self.contracts_loaded["Moc"][index]
 
         web3 = self.connection_helper.connection_manager.web3
         last_block_timestamp = web3.eth.get_block(web3.eth.block_number).timestamp
@@ -171,12 +171,13 @@ class Automator(PendingTransactionsTasksManager):
     @on_pending_transactions
     def tc_holders_interest_payment(self, index, task=None, global_manager=None, task_result=None):
 
-        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
+        contract_moc = self.contracts_loaded["Moc"][index]
 
-        # Get if block to settlement > 0 to continue
-        next_payment_block = contract_moc.sc.functions.nextTCInterestPayment().call()
-        current_block = self.connection_helper.connection_manager.block_number
-        if current_block > next_payment_block:
+        web3 = self.connection_helper.connection_manager.web3
+        last_block_timestamp = web3.eth.get_block(web3.eth.block_number).timestamp
+
+        next_payment_time = contract_moc.sc.functions.nextTCInterestPayment().call()
+        if next_payment_time < last_block_timestamp:
 
             # return if there are pending transactions
             if task_result.get('pending_transactions', None):
@@ -327,8 +328,8 @@ class Automator(PendingTransactionsTasksManager):
     @on_pending_transactions
     def refresh_ac_balance(self, index, index_token, task=None, global_manager=None, task_result=None):
 
-        contract_moc = self.contracts_loaded["Moc_{0}".format(index)]
-        contract_token = self.contracts_loaded["CA_TOKEN_{0}".format(index_token)]
+        contract_moc = self.contracts_loaded["Moc"][index]
+        contract_token = self.contracts_loaded["CA_TOKEN"][index_token]
 
         ac_balance = contract_token.balance_of(contract_moc.contract_address)
         ac_balance_collateral_bag = Web3.from_wei(contract_moc.ac_balance_collateral_bag(), 'ether')
@@ -372,7 +373,9 @@ class Automator(PendingTransactionsTasksManager):
         return task_result
 
 
+MAX_AC_AVAILABLE = 2
 MAX_TP_RANGE = 4
+
 
 class AutomatorTasks(Automator):
 
@@ -383,6 +386,7 @@ class AutomatorTasks(Automator):
 
         self.contracts_loaded = dict()
         self.contracts_addresses = dict()
+        self.moc_buckets_addresses = []
 
         # contract addresses
         self.load_contracts()
@@ -401,44 +405,62 @@ class AutomatorTasks(Automator):
         log.info("Getting addresses from Main Contract...")
 
         # Multi-collateral MOC
-        count = 0
-        count_ca_token = 0
-        for moc_address in self.config['addresses']['Moc']:
+        log.info("MocMultiCollateralGuard using address: %s" % self.config['addresses']['MocMultiCollateralGuard'])
+        # MocMultiCollateralGuard
+        self.contracts_loaded["MocMultiCollateralGuard"] = MocMultiCollateralGuard(
+            self.connection_helper.connection_manager,
+            contract_address=self.config['addresses']['MocMultiCollateralGuard'])
+        self.contracts_addresses['MocMultiCollateralGuard'] = self.contracts_loaded[
+            "MocMultiCollateralGuard"].address().lower()
+
+        # Reading MoC Buckets from Multi collateral Guard
+        self.moc_buckets_addresses = []
+        self.contracts_loaded['Moc'] = []
+        self.contracts_loaded["CA_TOKEN"] = []
+        for i in range(MAX_AC_AVAILABLE):
+            try:
+                moc_bucket_address = self.contracts_loaded["MocMultiCollateralGuard"].buckets(i)
+            except Web3RPCError:
+                continue
 
             contract_interface = MocCACoinbase
-            if self.config['collateral'][count]['type'] == 'rc20':
+            if self.config['collateral'][i]['type'] == 'rc20':
                 contract_interface = MocCARC20
 
-            self.contracts_loaded["Moc_{0}".format(count)] = contract_interface(
+            log.info("MoC Bucket using address: %s" % moc_bucket_address)
+
+            moc_bucket = contract_interface(
                 self.connection_helper.connection_manager,
-                contract_address=moc_address)
-            self.contracts_addresses["Moc_{0}".format(count)] = self.contracts_loaded["Moc_{0}".format(count)].address().lower()
+                contract_address=moc_bucket_address)
 
-            if self.config['collateral'][count]['type'] == 'rc20':
-                ac_token = self.contracts_loaded["Moc_{0}".format(count)].ac_token()
-                self.contracts_loaded["CA_TOKEN_{0}".format(count_ca_token)] = ERC20Token(
+            self.contracts_loaded['Moc'].append(moc_bucket)
+            self.moc_buckets_addresses.append(moc_bucket_address)
+
+            if self.config['collateral'][i]['type'] == 'rc20':
+                ca_token_address = moc_bucket.ac_token()
+                ca_token = ERC20Token(
                     self.connection_helper.connection_manager,
-                    contract_address=ac_token)
-                count_ca_token += 1
+                    contract_address=ca_token_address)
+                self.contracts_loaded["CA_TOKEN"].append(ca_token)
 
-            count += 1
 
         # Get TP Price provider... in multi-collateral we have the assumption that all collateral
         # have the same TPs, this why only watch the first collateral only
 
         price_providers = []
+        bucket_index = 0
         for i in range(MAX_TP_RANGE):
             try:
-                tp_address = self.contracts_loaded["Moc_0"].tp_tokens(i)
+                tp_address = self.contracts_loaded["Moc"][bucket_index].tp_tokens(i)
             except Web3RPCError:
                 continue
             if not tp_address:
                 break
-            tp_index = self.contracts_loaded["Moc_0"].pegged_token_index(tp_address)
+            tp_index = self.contracts_loaded["Moc"][bucket_index].pegged_token_index(tp_address)
             # result: tp_index = [index, enabled]
             if not tp_index:
                 break
-            tp_item = self.contracts_loaded["Moc_0"].peg_container(tp_index[0])
+            tp_item = self.contracts_loaded["Moc"][bucket_index].peg_container(tp_index[0])
             # result: tp_item = [index, price provider]
             price_providers.append(tp_item[1])
 
@@ -456,11 +478,6 @@ class AutomatorTasks(Automator):
                 self.connection_helper.connection_manager,
                 contract_address=self.config['addresses']['MoCMedianizer'])
             self.contracts_addresses['MoCMedianizer'] = self.contracts_loaded["MoCMedianizer"].address().lower()
-
-        # Multicall
-        self.contracts_loaded["Multicall2"] = Multicall2(
-            self.connection_helper.connection_manager,
-            contract_address=self.config['addresses']['Multicall2'])
 
         # Commission splitters
         if 'commission_splitters' in self.config['tasks']:
@@ -495,7 +512,7 @@ class AutomatorTasks(Automator):
         self.max_workers = 1
 
         count = 0
-        for moc_address in self.config['addresses']['Moc']:
+        for moc_address in self.moc_buckets_addresses:
             # run_settlement
             if 'execute_settlement' in self.config['tasks']:
                 log.info("Jobs add: 1. Execute Settlement. Bucket: %s" % moc_address)

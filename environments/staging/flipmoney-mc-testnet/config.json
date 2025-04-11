@@ -21,7 +21,7 @@
     }
   },
   "addresses": {
-    "MocMultiCollateralGuard": "0xef486477563E203215db5c7386274D7DFE96a9eC"
+    "MocMultiCollateralGuard": "0x2e9DC514c1411F7a1e3007914411adA79823Aff2"
   },
   "collateral": [
     {

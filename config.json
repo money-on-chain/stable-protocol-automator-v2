@@ -21,11 +21,15 @@
     }
   },
   "addresses": {
-    "MocMultiCollateralGuard": "0x2e9DC514c1411F7a1e3007914411adA79823Aff2"
+    "MocMultiCollateralGuard": "0x29166156f32dD3ac435FeEe0028Aaa4151Bd8908"
   },
   "collateral": [
     {
       "name": "BPRO",
+      "type": "rc20"
+    },
+    {
+      "name": "DOC",
       "type": "rc20"
     }
   ]

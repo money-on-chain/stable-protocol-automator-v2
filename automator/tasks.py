@@ -417,17 +417,17 @@ class AutomatorTasks(Automator):
         self.moc_buckets_addresses = []
         self.contracts_loaded['Moc'] = []
         self.contracts_loaded["CA_TOKEN"] = []
-        for i in range(MAX_AC_AVAILABLE):
+        for ca_index, ca in enumerate(self.config['collateral']):
             try:
-                moc_bucket_address = self.contracts_loaded["MocMultiCollateralGuard"].buckets(i)
+                moc_bucket_address = self.contracts_loaded["MocMultiCollateralGuard"].buckets(ca_index)
             except Web3RPCError:
                 continue
 
             contract_interface = MocCACoinbase
-            if self.config['collateral'][i]['type'] == 'rc20':
+            if ca['type'] == 'rc20':
                 contract_interface = MocCARC20
 
-            log.info("MoC Bucket using address: %s" % moc_bucket_address)
+            log.info("MoC Bucket ({0}) using address: {1}".format(ca['name'], moc_bucket_address))
 
             moc_bucket = contract_interface(
                 self.connection_helper.connection_manager,
@@ -436,7 +436,7 @@ class AutomatorTasks(Automator):
             self.contracts_loaded['Moc'].append(moc_bucket)
             self.moc_buckets_addresses.append(moc_bucket_address)
 
-            if self.config['collateral'][i]['type'] == 'rc20':
+            if ca['type']  == 'rc20':
                 ca_token_address = moc_bucket.ac_token()
                 ca_token = ERC20Token(
                     self.connection_helper.connection_manager,
@@ -449,9 +449,9 @@ class AutomatorTasks(Automator):
 
         price_providers = []
         bucket_index = 0
-        for i in range(MAX_TP_RANGE):
+        for tp_i, tp in enumerate(self.config['pegged']):
             try:
-                tp_address = self.contracts_loaded["Moc"][bucket_index].tp_tokens(i)
+                tp_address = self.contracts_loaded["Moc"][bucket_index].tp_tokens(tp_i)
             except Web3RPCError:
                 continue
             if not tp_address:
@@ -466,7 +466,9 @@ class AutomatorTasks(Automator):
 
         # load TP price providers
         self.contracts_loaded["PriceProviders"] = []
-        for pp_address in price_providers:
+        for pp_address_index, pp_address in enumerate(price_providers):
+            log.info("Price Provider TP ({0}) using address: {1}".format(
+                self.config['pegged'][pp_address_index]['name'], pp_address))
             pp = PriceProvider(
                 self.connection_helper.connection_manager,
                 contract_address=pp_address)
@@ -511,38 +513,48 @@ class AutomatorTasks(Automator):
         # set max workers
         self.max_workers = 1
 
-        count = 0
-        for moc_address in self.moc_buckets_addresses:
+        for count, moc_address in enumerate(self.moc_buckets_addresses):
             # run_settlement
             if 'execute_settlement' in self.config['tasks']:
-                log.info("Jobs add: 1. Execute Settlement. Bucket: %s" % moc_address)
+                log.info("Jobs add: 1. Execute Settlement. Bucket: (%s) %s" % (
+                    self.config['collateral'][count]['name'], moc_address)
+                         )
                 interval = self.config['tasks']['execute_settlement']['interval']
                 self.add_task(self.execute_settlement,
                               args=[count],
                               wait=interval,
                               timeout=180,
-                              task_name='1. Execute Settlement. Bucket: %s' % moc_address)
+                              task_name='1. Execute Settlement. Bucket: (%s) %s' % (
+                                  self.config['collateral'][count]['name'], moc_address)
+                              )
 
             # calculate EMA
             if 'calculate_ema' in self.config['tasks']:
-                log.info("Jobs add: 2. Calculate EMA. Bucket: %s" % moc_address)
+                log.info("Jobs add: 2. Calculate EMA. Bucket: (%s) %s" % (
+                    self.config['collateral'][count]['name'], moc_address)
+                         )
                 interval = self.config['tasks']['calculate_ema']['interval']
                 self.add_task(self.calculate_ema,
                               args=[count],
                               wait=interval,
                               timeout=180,
-                              task_name='2. Calculate EMA. Bucket: %s' % moc_address)
+                              task_name='2. Calculate EMA. Bucket: (%s) %s' % (
+                                  self.config['collateral'][count]['name'], moc_address)
+                              )
 
             # tc_holders_interest_payment
             if 'tc_holders_interest_payment' in self.config['tasks']:
-                log.info("Jobs add: 3. Run TC Holders Interest Payment. Bucket: %s" % moc_address)
+                log.info("Jobs add: 3. Run TC Holders Interest Payment. Bucket: (%s) %s" % (
+                    self.config['collateral'][count]['name'], moc_address)
+                         )
                 interval = self.config['tasks']['tc_holders_interest_payment']['interval']
                 self.add_task(self.tc_holders_interest_payment,
                               args=[count],
                               wait=interval,
                               timeout=180,
-                              task_name='3. Run TC Holders Interest Payment. Bucket: %s' % moc_address)
-            count += 1
+                              task_name='3. Run TC Holders Interest Payment. Bucket: (%s) %s' % (
+                                  self.config['collateral'][count]['name'], moc_address)
+                              )
 
         # Oracle Poke
         if 'oracle_poke' in self.config['tasks']:

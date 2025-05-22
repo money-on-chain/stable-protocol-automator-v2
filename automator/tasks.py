@@ -443,36 +443,34 @@ class AutomatorTasks(Automator):
                     contract_address=ca_token_address)
                 self.contracts_loaded["CA_TOKEN"].append(ca_token)
 
+            # Get TP Price provider... in multi-collateral we have the assumption that all collateral
+            # have the same TPs, this why only watch the first collateral only
 
-        # Get TP Price provider... in multi-collateral we have the assumption that all collateral
-        # have the same TPs, this why only watch the first collateral only
+            price_providers = []
+            for tp_i, tp in enumerate(self.config['pegged']):
+                try:
+                    tp_address = self.contracts_loaded["Moc"][ca_index].tp_tokens(tp_i)
+                except Web3RPCError:
+                    continue
+                if not tp_address:
+                    break
+                tp_index = self.contracts_loaded["Moc"][ca_index].pegged_token_index(tp_address)
+                # result: tp_index = [index, enabled]
+                if not tp_index:
+                    break
+                tp_item = self.contracts_loaded["Moc"][ca_index].peg_container(tp_index[0])
+                # result: tp_item = [index, price provider]
+                price_providers.append(tp_item[1])
 
-        price_providers = []
-        bucket_index = 0
-        for tp_i, tp in enumerate(self.config['pegged']):
-            try:
-                tp_address = self.contracts_loaded["Moc"][bucket_index].tp_tokens(tp_i)
-            except Web3RPCError:
-                continue
-            if not tp_address:
-                break
-            tp_index = self.contracts_loaded["Moc"][bucket_index].pegged_token_index(tp_address)
-            # result: tp_index = [index, enabled]
-            if not tp_index:
-                break
-            tp_item = self.contracts_loaded["Moc"][bucket_index].peg_container(tp_index[0])
-            # result: tp_item = [index, price provider]
-            price_providers.append(tp_item[1])
-
-        # load TP price providers
-        self.contracts_loaded["PriceProviders"] = []
-        for pp_address_index, pp_address in enumerate(price_providers):
-            log.info("Price Provider TP ({0}) using address: {1}".format(
-                self.config['pegged'][pp_address_index]['name'], pp_address))
-            pp = PriceProvider(
-                self.connection_helper.connection_manager,
-                contract_address=pp_address)
-            self.contracts_loaded["PriceProviders"].append(pp)
+            # load TP price providers
+            self.contracts_loaded["PriceProviders"] = []
+            for pp_address_index, pp_address in enumerate(price_providers):
+                log.info("Price Provider TP ({0}) using address: {1}".format(
+                    self.config['pegged'][pp_address_index]['name'], pp_address))
+                pp = PriceProvider(
+                    self.connection_helper.connection_manager,
+                    contract_address=pp_address)
+                self.contracts_loaded["PriceProviders"].append(pp)
 
         # MoCMedianizer
         if 'oracle_poke' in self.config['tasks']:

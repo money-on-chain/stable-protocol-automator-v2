@@ -30,5 +30,10 @@
     "Moc": "0xEC766E9BAdcdE53B01118F1D5Ba56295A62e2C6D",
     "MoCMedianizer": "",
     "Multicall2": "0x8f344c3b2a02a801c24635f594c5652c8a2eb02a"
-  }
+  },
+  "pegged": [
+    {
+      "name": "USDRIF"
+    }
+  ]
 }

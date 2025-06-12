@@ -174,6 +174,15 @@ class Moc(Contract):
     def locked_in_pending(self):
         return self.sc.functions.qACLockedInPending().call()
 
+    def tp_tokens(self, index):
+        return self.sc.functions.tpTokens(index).call()
+
+    def pegged_token_index(self, tp_address):
+        return self.sc.functions.peggedTokenIndex(tp_address).call()
+
+    def peg_container(self, index):
+        return self.sc.functions.pegContainer(index).call()
+
 
 class MoCMedianizer(Contract):
 
@@ -206,6 +215,28 @@ class MoCMedianizer(Contract):
         )
 
         return tx_hash
+
+class PriceProvider(Contract):
+
+    log = logging.getLogger()
+    precision = 10 ** 18
+
+    contract_name = 'PriceProvider'
+    contract_abi = Contract.content_abi_file(
+        os.path.join(os.path.dirname(os.path.realpath(__file__)), 'abi/MoCMedianizer.abi'))
+
+    def __init__(self, connection_manager, contract_address=None, contract_abi=None, contract_bin=None):
+
+        super().__init__(connection_manager,
+                         contract_address=contract_address,
+                         contract_abi=contract_abi,
+                         contract_bin=contract_bin)
+
+        # finally load the contract
+        self.load_contract()
+
+    def peek(self):
+        return self.sc.functions.peek().call()
 
 
 class CommissionSplitter(Contract):

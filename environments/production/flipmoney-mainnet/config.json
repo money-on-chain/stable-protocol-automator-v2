@@ -33,7 +33,10 @@
   },
   "pegged": [
     {
-      "name": "USDRIF"
+      "name": "ARS"
+    },
+    {
+      "name": "COP"
     }
   ]
 }

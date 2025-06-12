@@ -24,5 +24,10 @@
   "addresses": {
     "Moc": "0xdE6F692a697Fc4B01ea90215619c93092D6D758b",
     "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8"
-  }
+  },
+  "pegged": [
+    {
+      "name": "DOC"
+    }
+  ]
 }

@@ -30,5 +30,13 @@
     "Moc": "0x1D316199a07962A06ec59D8d10990403f0330485",
     "MoCMedianizer": "",
     "Multicall2": "0xaf7be1ef9537018feda5397d9e3bb9a1e4e27ac8"
-  }
+  },
+  "pegged": [
+    {
+      "name": "ARS"
+    },
+    {
+      "name": "COP"
+    }
+  ]
 }

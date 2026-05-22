@@ -1,6 +1,6 @@
 # Stable Protocol Automator v2
 
-## Warning: This is only for version 2 of the main contracts.
+## Note: DEPRECATED!!! This repo is going to be deprecated use V3
 
 This is a backend executor jobs. Periodic tasks that runs different jobs, 
 that call the contracts and asks if they are ready to execute it. This jobs 
